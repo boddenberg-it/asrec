@@ -34,18 +34,9 @@ def chooseDeviceMenu
 
 // non-UI
 def devices = []
-def uiDevices = []
 def init = true
 def uiState = true
 def serial = ""
-
-def uiElements = []
-uiElements.add(toggleAirplaneModeButton)
-uiElements.add(installApkButton)
-uiElements.add(takeScreenshotButton)
-uiElements.add(recordVideoButton)
-uiElements.add(batterySlider)
-uiElements.add(brightnessSlider)
 
 swing = new SwingBuilder()
 
@@ -79,7 +70,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 		vbox {
 
-			// init/refresh buttons
+			// init/refresh button
 			label ' '
 			hbox {
 				initButton = button('Initialise', actionPerformed: { event ->
@@ -223,6 +214,8 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 			setBatteryButton = button('set', actionPerformed: { event ->
 			 println "Setting battery level to ${batteryValue}"
+			 println serial
+			 adbSetBatteryLevel(serial, batterySlider.getValue())
 			 setBatteryButton.setEnabled(false)
 			 resetBatteryButton.setEnabled(true)
 			})
@@ -233,7 +226,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 		hbox {
 			resetBatteryButton = button('Reset Battery', actionPerformed: { event ->
-				//adbResetBattery(); // will return the actual battery value, used to reset slider and label:
+				adbResetBattery(serial);
 				batterySlider.value = 50
 				batteryLabel.text = "Battery: 50 %"
 				resetBatteryButton.setEnabled(false)
@@ -244,7 +237,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 		hbox {
 			toggleAirplaneModeButton = button('Toggle Airplane Mode', actionPerformed: { event ->
-				adbToggleAirplaneMode();
+				adbToggleAirplaneMode(serial);
 			})
 			toggleAirplaneModeButton.setEnabled(false)
 		}
@@ -298,6 +291,20 @@ void adbTakeScreenshot(String serial) {
 	pullErrCode = "adb -s ${serial} wait-for-device pull /mnt/sdcard/asrec/${fileName} ${filePath}".execute()
 }
 
+void adbResetBattery(String serial){
+	println "resetBattery call: $serial"
+	"adb -s ${serial} wait-for-device shell dumpsys battery reset".execute()
+}
+
+void adbCopyFile(String serial, String source, String destination){
+	// log dat
+	"adb -s $serial wait-for-device pull $source $destination".execute()
+}
+
+void adbSetBatteryLevel(String serial, int level) {
+	println "adbSetBatteryLevel call: $serial"
+	"adb -s ${serial} wait-for-device shell dumpsys battery set level $level".execute()
+}
 // void because try-catch within function
 void adbInstallApk(String serial) {
 
@@ -326,14 +333,6 @@ void adbInstallApk(String serial) {
 			alert("APK installation failed!\n\n${apkPath}\n")
 		}
 	}
-}
-
-
-
-
-
-void updateDevices(List devices){
-
 }
 
 // fileDialog used for Install APK, Take Screenshot and Record Video
