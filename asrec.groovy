@@ -18,7 +18,7 @@ def batteryValue
 def brightnessValue
 
 def setBatteryButton
-def brightnessSetButton
+def setBrightnessButton
 def initButton
 def installApkButton
 def refreshButton
@@ -184,16 +184,17 @@ frame = swing.frame(title:'Android Screen RECorder') {
       	public void stateChanged(ChangeEvent event) {
         	brightnessValue = brightnessSlider.getValue()
 					brightnessLabel.text = "Brightness: ${brightnessValue} %"
-					brightnessSetButton.setEnabled(true)
+					setBrightnessButton.setEnabled(true)
 				}
 			})
 			brightnessSlider.setEnabled(false)
 
-			brightnessSetButton = button('set', actionPerformed: { event ->
+			setBrightnessButton = button('set', actionPerformed: { event ->
 			 println "Setting brightness level to ${brightnessValue}"
-			 brightnessSetButton.setEnabled(false)
+			 adbSetBrightnessLevel(serial, brightnessValue)
+			 setBrightnessButton.setEnabled(false)
 			})
-			brightnessSetButton.setEnabled(false)
+			setBrightnessButton.setEnabled(false)
 		}
 
 		label ' ' // spacer
@@ -299,6 +300,12 @@ void adbResetBattery(String serial){
 void adbCopyFile(String serial, String source, String destination){
 	// log dat
 	"adb -s $serial wait-for-device pull $source $destination".execute()
+}
+
+void adbSetBrightnessLevel(String serial, int level) {
+	int byteLevel = level * 25 / 10
+	println "adbSetBrightnessLevel call: $serial $level $byteLevel"
+	"adb -s $serial wait-for-device shell settings put system screen_brightness $byteLevel".execute()
 }
 
 void adbSetBatteryLevel(String serial, int level) {
