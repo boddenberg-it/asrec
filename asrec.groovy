@@ -34,7 +34,9 @@ def chooseDeviceMenu
 
 // non-UI
 def devices = []
+def uiDevices = []
 def init = true
+def uiState = true
 def serial = ""
 
 def uiElements = []
@@ -47,10 +49,13 @@ uiElements.add(brightnessSlider)
 
 swing = new SwingBuilder()
 
+println "init: $init"
 frame = swing.frame(title:'Android Screen RECorder') {
 	menuBar {
 		menu('Asrec') {
-			menuItem 'Preferences'
+			menuItem('Preferences', actionPerformed: { event ->
+				alert("HALLO WELT!")
+			})
 			menuItem 'Load Config'
 			menuItem 'Help'
 			menuItem 'Info'
@@ -62,63 +67,110 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 	panel {
 
+		// helper closures
+		def enableUi = {
+			toggleAirplaneModeButton.setEnabled(uiState)
+			installApkButton.setEnabled(uiState)
+			takeScreenshotButton.setEnabled(uiState)
+			recordVideoButton.setEnabled(uiState)
+			batterySlider.setEnabled(uiState)
+			brightnessSlider.setEnabled(uiState)
+		}
+
 		vbox {
 
 			// init/refresh buttons
 			label ' '
 			hbox {
 				initButton = button('Initialise', actionPerformed: { event ->
-					println "INIT click"
 
-					if(init) {
-						init = false
+						// updateDevices
+						def updateDevices = {
+							def connectedDevices = []
+						// obtaining connected devices
+						"adb devices".execute().text.eachLine {
+							if (it && (it.contains("unknown") || \
+								(it.contains("device") && !it.contains("devices")))) {
+									connectedDevices.add(it.substring(0, it.indexOf("\t")))
+							}
+						}
+						// Adding new devices
+						connectedDevices.each {
+							if(devices.indexOf(it) == -1) {
+								// log that one device has been added
+								println "Adding $it to devices"
+								devices.add(it)
+							}
+						}
+						// Remove disconnect devices
+						// necessary to firs obtain disconnected devices to avoid ConcurrentException
+						List disconnectedDevices = []
+						devices.each {
+							if (connectedDevices.indexOf(it) == -1) {
+								disconnectedDevices.add(it)
+							}
+						}
+						disconnectedDevices.each() {
+							// will be overriden in case of one device being present
+							if(serial == it) {
+								choosenDeviceLabel.text = "Device: Choose Device"
+								uiState = false
+								enableUi()
+							}
+							println "Removing disconnected Device: $it"
+							devices.removeAll(it)
+						}
+					}
+
+
+
+						def oneDeviceFound = {
+							serial = devices[0]
+							println "serial: $serial"
+							choosenDeviceLabel.text = "Device: $serial"
+							chooseDeviceMenu.setEnabled(false)
+							uiState = true
+							enableUi()
+						}
+
+						def moreThanOneFound = {
+							println "init: $init"
+							if(init) {choosenDeviceLabel.text = "Device: Choose Device"}
+
+							// CLearing "Choose Device" menu and refilling it
+							chooseDeviceMenu.removeAll()
+							devices.each() {
+									def item = menuItem(it, actionPerformed: { fire ->
+										serial = it
+										choosenDeviceLabel.text = "Device: $serial"
+										uiState = true
+										enableUi()
+									})
+									chooseDeviceMenu.add(item)
+								}
+							chooseDeviceMenu.setEnabled(true)
+						}
+
 						initButton.setEnabled(false)
 						adbDaemonLabel.text = "ADB daemon: Initialising..."
 
 						// check wheter adb is installed and launching daemon (if not launched already)
 						if(!"adb devices".execute().text.contains("List of devices attached")){
-							alert("adb not found. Is it installed?\nCheck Asrec -> Help for detials!")
+							alert("adb not found. Is it installed?\nCheck Asrec -> Help for details!")
 							return
 						}
 
-						// TODO: setDevice in updateDevices if only one (unblock elements),
-						// 			 if more inform() to select via enabled "Choose Device"
-						//  		 if 0, say "Device not found" + inform(no device found please connect one)
-
-						// Then the case of unknown (missing RSA handshake)
-						// Then git init and complete actions //battery foo...
-
 						adbDaemonLabel.text = "ADB daemon: Initialised"
-						choosenDeviceLabel.text = "Device: searching..."
 						initButton.text = "Refresh"
-						// activate menu within updateDevices,
-						// but inform in this init state thingy
 
-						// case 0 -> alert, break!
-						// case 1 -> inform, only one device (will be used)
-						// case >1 ->  please select stuff!
-						// default -> if (case 0,1) { enableStuff}
+					updateDevices()
 
+					if (devices.size() == 1) { oneDeviceFound() }
+					if (devices.size() > 1) { moreThanOneFound() }
 
-						// then rest in Choose Device
-						if (updateDevices(devices) == 1) {
-							serial = devices[0]
-							println "serial: $serial"
-							choosenDeviceLabel.text = "Device: $serial"
-							inform("Successfully initialised!\nUsing Device: $serial")
-							toggleAirplaneModeButton.setEnabled(true)
-							installApkButton.setEnabled(true)
-							takeScreenshotButton.setEnabled(true)
-							recordVideoButton.setEnabled(true)
-							batterySlider.setEnabled(true)
-							brightnessSlider.setEnabled(true)
-						}
-					} else {
-						updateDevices(devices)
-					}
 					initButton.setEnabled(true)
+					if(init) {init = false}
 				})
-
 			}
 
 			label ' ' // spacer
@@ -153,10 +205,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 			brightnessSetButton.setEnabled(false)
 		}
 
-
 		label ' ' // spacer
-
-
 
 		// battery slider
 		hbox {
@@ -283,22 +332,8 @@ void adbInstallApk(String serial) {
 
 
 
-int updateDevices(List devices){
-	"adb devices".execute().text.eachLine {
-		if (it && (it.contains("unknown") || \
-			(it.contains("device") && !it.contains("devices")))) {
+void updateDevices(List devices){
 
-				def device = it.substring(0, it.indexOf("\t"))
-				if(devices.indexOf(device) == -1) {
-					// log that one device has been added
-					println device
-					devices.add(device)
-				}
-		}
-	}
-	// for debugging
-	println devices
-	return devices.size()
 }
 
 // fileDialog used for Install APK, Take Screenshot and Record Video
