@@ -277,6 +277,8 @@ frame = swing.frame(title:'Android Screen RECorder') {
 		hbox { label'Copyright 2017 Boddenberg.it' }
   	}
 	}
+	// init
+	initButton.doClick()
 }
 
 frame.pack()
@@ -299,7 +301,7 @@ void adbResetBattery(String serial){
 
 void adbCopyFile(String serial, String source, String destination){
 	// log dat
-	"adb -s $serial wait-for-device pull $source $destination".execute()
+	"adb -s ${serial} wait-for-device pull $source $destination".execute()
 }
 
 void adbSetBrightnessLevel(String serial, int level) {
@@ -339,6 +341,27 @@ void adbInstallApk(String serial) {
 			println e.toString()
 			alert("APK installation failed!\n\n${apkPath}\n")
 		}
+	}
+}
+
+// check out the airplaneModeOn and Off script from XYZ
+void adbToggleAirplaneMode(serial) {
+	def oldState = "adb -s ${serial} wait-for-device shell settings get global airplane_mode_on".execute().text
+	"adb -s ${serial} wait-for-device shell am start -a android.settings.AIRPLANE_MODE_SETTINGS".execute()
+	sleep(5000)
+	// if already toggled previously one ENTER is sufficient.
+	"adb -s ${serial} wait-for-device shell input keyevent KEYCODE_ENTER".execute()
+	sleep(1000)
+	def newState = "adb -s ${serial} wait-for-device shell settings get global airplane_mode_on".execute().text
+	if(newState == oldState) {
+		// first time toggling, Airplane mode switch needs to be focused
+		"adb -s ${serial} shell input keyevent KEYCODE_ENTER".execute()
+	}
+	"adb -s ${serial} wait-for-device shell input keyevent KEYCODE_HOME".execute()
+	// verification
+	newState = "adb -s ${serial} wait-for-device shell settings get global airplane_mode_on".execute().text
+	if(newState == oldState) {
+		alert "\"Toggle Airplane Mode\" didn't succeed!\nnewState: ${newState}oldState: $oldState"
 	}
 }
 
