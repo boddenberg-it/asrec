@@ -37,6 +37,8 @@ def devices = []
 def init = true
 def uiState = true
 def serial = ""
+def recordState = false
+def recordProcess
 
 swing = new SwingBuilder()
 
@@ -265,9 +267,16 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 		hbox {
 			recordVideoButton = button('Record Video', actionPerformed: { event ->
-				String pathOfScreenshot = recordVideo()
-				String fileDestination = fileDialog("Choose file path to store video")
-				if (fileDestination) adbCopyFile(pathOfScreenshot, fileDestination)
+				if(!recordState) {
+					recordProcess = "adb -s ${serial} wait-for-device shell screenrecord /mnt/sdcard/asrec.mp4".execute()
+					recordVideoButton.text = "Stop Recording"
+					recordState = true
+				} else {
+					recordProcess.destroy()
+					"adb -s ${serial} wait-for-device pull /mnt/sdcard/asrec.mp4 ${fileDialog()}".execute()
+					recordVideoButton.text = "Record Video"
+					recordState = false
+				}
 			})
 			recordVideoButton.setEnabled(false)
 		}
@@ -285,13 +294,21 @@ frame.pack()
 frame.size()
 frame.visible = true
 
+// toggleCharging
+// adb shell dumpsys battery set usb 1 (||0)
+// does not work on lineage, check samsung and nexus 5!
+// now record da shit!
+
 // Functions will probably be put in non-ui file:
 void adbTakeScreenshot(String serial) {
-	String fileName = "392ad98b34f03_17-06-2018-14:30:11.png"
 	println "adb serial: $serial"
-	"adb -s ${serial} wait-for-device shell screencap /mnt/sdcard/asrec/${fileName}".execute()
-	filePath = fileDialog()
-	pullErrCode = "adb -s ${serial} wait-for-device pull /mnt/sdcard/asrec/${fileName} ${filePath}".execute()
+	"adb -s ${serial} wait-for-device shell screencap /mnt/sdcard/asrec.png".execute()
+	"adb -s ${serial} wait-for-device pull /mnt/sdcard/asrec.png ${fileDialog()}".execute().text
+}
+
+void adbRecordVideo(String serial) {
+	proc = "adb -s ${serial} wait-for-device shell screencap /mnt/sdcard/asrec.png".execute()
+	println "yeah parallelism!!"
 }
 
 void adbResetBattery(String serial){
@@ -299,15 +316,12 @@ void adbResetBattery(String serial){
 	"adb -s ${serial} wait-for-device shell dumpsys battery reset".execute()
 }
 
-void adbCopyFile(String serial, String source, String destination){
-	// log dat
-	"adb -s ${serial} wait-for-device pull $source $destination".execute()
-}
-
+// TODO: think about brightness + and - buttons, in case slider sulution doesn't work.
+//       using KEYCODE_BRIGHTNESS_DOWN KEYCODE_BRIGHTNESS_UP
 void adbSetBrightnessLevel(String serial, int level) {
 	int byteLevel = level * 25 / 10
 	println "adbSetBrightnessLevel call: $serial $level $byteLevel"
-	"adb -s $serial wait-for-device shell settings put system screen_brightness $byteLevel".execute()
+	"adb -s ${serial} wait-for-device shell settings put system screen_brightness $byteLevel".execute()
 }
 
 void adbSetBatteryLevel(String serial, int level) {
