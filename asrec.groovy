@@ -19,11 +19,16 @@ def brightnessValue
 
 def setBatteryButton
 def setBrightnessButton
+def brightnessDownButton
+def brightnessUpButton
 def initButton
 def installApkButton
-def refreshButton
 def resetBatteryButton
+def resetChargingButton
+def connectTcpButton
+def disconnectTcpButton
 def toggleAirplaneModeButton
+def toggleChargingButton
 def takeScreenshotButton
 def recordVideoButton
 
@@ -33,9 +38,10 @@ def brightnessSlider
 def chooseDeviceMenu
 
 // non-UI
+def batteryLevel
 def devices = []
 def init = true
-def uiState = true
+def uiState = false
 def serial = ""
 def recordState = false
 def recordProcess
@@ -67,9 +73,13 @@ frame = swing.frame(title:'Android Screen RECorder') {
 			takeScreenshotButton.setEnabled(uiState)
 			recordVideoButton.setEnabled(uiState)
 			batterySlider.setEnabled(uiState)
-			brightnessSlider.setEnabled(uiState)
+			brightnessDownButton.setEnabled(uiState)
+			brightnessUpButton.setEnabled(uiState)
+			toggleChargingButton.setEnabled(uiState)
+			connectTcpButton.setEnabled(uiState)
 		}
 
+		// TODO: remove brightness slider, buttons are enough  and work always!
 		vbox {
 
 			// init/refresh button
@@ -80,42 +90,40 @@ frame = swing.frame(title:'Android Screen RECorder') {
 						// updateDevices
 						def updateDevices = {
 							def connectedDevices = []
-						// obtaining connected devices
-						"adb devices".execute().text.eachLine {
+							// obtaining connected devices
+							"adb devices".execute().text.eachLine {
 							if (it && (it.contains("unknown") || \
 								(it.contains("device") && !it.contains("devices")))) {
 									connectedDevices.add(it.substring(0, it.indexOf("\t")))
+								}
 							}
-						}
-						// Adding new devices
-						connectedDevices.each {
-							if(devices.indexOf(it) == -1) {
-								// log that one device has been added
-								println "Adding $it to devices"
-								devices.add(it)
+							// Adding new devices
+							connectedDevices.each {
+								if(devices.indexOf(it) == -1) {
+									// log that one device has been added
+									println "Adding $it to devices"
+									devices.add(it)
+								}
 							}
-						}
-						// Remove disconnect devices
-						// necessary to firs obtain disconnected devices to avoid ConcurrentException
-						List disconnectedDevices = []
-						devices.each {
-							if (connectedDevices.indexOf(it) == -1) {
-								disconnectedDevices.add(it)
+							// Remove disconnect devices
+							List disconnectedDevices = []
+							devices.each {
+								if (connectedDevices.indexOf(it) == -1) {
+									disconnectedDevices.add(it)
+								}
 							}
-						}
-						disconnectedDevices.each() {
-							// will be overriden in case of one device being present
-							if(serial == it) {
-								choosenDeviceLabel.text = "Device: Choose Device"
-								uiState = false
-								enableUi()
+							disconnectedDevices.each() {
+								// will be overriden in case of one device being present
+								if(serial == it) {
+									choosenDeviceLabel.text = "Device: Choose Device"
+									uiState = false
+									enableUi()
+								}
+								println "Removing disconnected Device: $it"
+								devices.removeAll(it)
 							}
-							println "Removing disconnected Device: $it"
-							devices.removeAll(it)
+							if(devices.size() == 0) choosenDeviceLabel.text = "Device: Not connected"
 						}
-					}
-
-
 
 						def oneDeviceFound = {
 							serial = devices[0]
@@ -127,10 +135,9 @@ frame = swing.frame(title:'Android Screen RECorder') {
 						}
 
 						def moreThanOneFound = {
-							println "init: $init"
 							if(init) {choosenDeviceLabel.text = "Device: Choose Device"}
 
-							// CLearing "Choose Device" menu and refilling it
+							// Updating "Choose Device" menu
 							chooseDeviceMenu.removeAll()
 							devices.each() {
 									def item = menuItem(it, actionPerformed: { fire ->
@@ -144,20 +151,19 @@ frame = swing.frame(title:'Android Screen RECorder') {
 							chooseDeviceMenu.setEnabled(true)
 						}
 
-						initButton.setEnabled(false)
-						adbDaemonLabel.text = "ADB daemon: Initialising..."
+					initButton.setEnabled(false)
+					adbDaemonLabel.text = "ADB daemon: Initialising..."
 
-						// check wheter adb is installed and launching daemon (if not launched already)
-						if(!"adb devices".execute().text.contains("List of devices attached")){
-							alert("adb not found. Is it installed?\nCheck Asrec -> Help for details!")
-							return
-						}
+					// check wheter adb is installed and launching daemon (if not launched already)
+					if(!"adb devices".execute().text.contains("List of devices attached")){
+						alert("adb not found. Is it installed?\nCheck Asrec -> Help for details!")
+						return
+					}
 
-						adbDaemonLabel.text = "ADB daemon: Initialised"
-						initButton.text = "Refresh"
+					adbDaemonLabel.text = "ADB daemon: Initialised"
+					initButton.text = "Refresh"
 
 					updateDevices()
-
 					if (devices.size() == 1) { oneDeviceFound() }
 					if (devices.size() > 1) { moreThanOneFound() }
 
@@ -176,34 +182,22 @@ frame = swing.frame(title:'Android Screen RECorder') {
 			choosenDeviceLabel = label 'Device: not connected'
 		}
 
-		// brightness slider
-		label ' ' //spacer
+		label ' ' // spacer
 		hbox {
-			brightnessLabel = label 'Brightness: 50 %'
-
-			brightnessSlider = slider()
-			brightnessSlider.addChangeListener(new ChangeListener() {
-      	public void stateChanged(ChangeEvent event) {
-        	brightnessValue = brightnessSlider.getValue()
-					brightnessLabel.text = "Brightness: ${brightnessValue} %"
-					setBrightnessButton.setEnabled(true)
-				}
+			brightnessDownButton = button('Brightness Down', actionPerformed: { event ->
+				"adb -s ${serial} wait-for-device shell input keyevent KEYCODE_BRIGHTNESS_DOWN".execute()
 			})
-			brightnessSlider.setEnabled(false)
-
-			setBrightnessButton = button('set', actionPerformed: { event ->
-			 println "Setting brightness level to ${brightnessValue}"
-			 adbSetBrightnessLevel(serial, brightnessValue)
-			 setBrightnessButton.setEnabled(false)
+			label ' ' // spacer
+			brightnessUpButton = button('Brightness Up', actionPerformed: { event ->
+				"adb -s ${serial} wait-for-device shell input keyevent KEYCODE_BRIGHTNESS_UP".execute()
 			})
-			setBrightnessButton.setEnabled(false)
 		}
 
-		label ' ' // spacer
-
 		// battery slider
+		label ' '
 		hbox {
-			batteryLabel = label 'Battery: 50 %'
+			label ' '
+			batteryLabel = label "Battery: n/a %"
 
 			batterySlider = slider()
 			batterySlider.addChangeListener(new ChangeListener() {
@@ -213,7 +207,6 @@ frame = swing.frame(title:'Android Screen RECorder') {
 					setBatteryButton.setEnabled(true)
 				}
 			})
-			batterySlider.setEnabled(false)
 
 			setBatteryButton = button('set', actionPerformed: { event ->
 			 println "Setting battery level to ${batteryValue}"
@@ -223,6 +216,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 			 resetBatteryButton.setEnabled(true)
 			})
 			setBatteryButton.setEnabled(false)
+			label ' '
 		}
 
 		label ' ' // spacer
@@ -230,31 +224,64 @@ frame = swing.frame(title:'Android Screen RECorder') {
 		hbox {
 			resetBatteryButton = button('Reset Battery', actionPerformed: { event ->
 				adbResetBattery(serial);
+				// updating UI
 				batterySlider.value = 50
-				batteryLabel.text = "Battery: 50 %"
+				batteryLabel.text = "Battery: n/a %"
 				resetBatteryButton.setEnabled(false)
 				setBatteryButton.setEnabled(false)
 			})
 			resetBatteryButton.setEnabled(false)
+
+			label ' ' // spacer
+
+			resetChargingButton = button('Reset Charging', actionPerformed: { event ->
+				"adb -s ${serial} wait-for-device shell dumpsys battery reset".execute()
+				resetChargingButton.setEnabled(false)
+			})
+			resetChargingButton.setEnabled(false)
+		}
+
+		hbox {
+			toggleChargingButton = button('Toggle Charging Mode', actionPerformed: { event ->
+				if("adb shell dumpsys battery".execute().text.contains("USB powered: true")) {
+					"adb -s ${serial} wait-for-device shell dumpsys battery set usb 0".execute()
+				} else {
+					"adb -s ${serial} wait-for-device shell dumpsys battery set usb 1".execute()
+				}
+				resetChargingButton.setEnabled(true)
+			})
 		}
 
 		hbox {
 			toggleAirplaneModeButton = button('Toggle Airplane Mode', actionPerformed: { event ->
 				adbToggleAirplaneMode(serial);
 			})
-			toggleAirplaneModeButton.setEnabled(false)
+		}
+
+		hbox {
+
+			connectTcpButton = button('ADB WiFi ON', actionPerformed: { event ->
+				adbConnectTcp(serial)
+				disconnectTcpButton.setEnabled(uiState)
+				initButton.doClick()
+			})
+			label ' '
+			disconnectTcpButton = button('ADB WIFI OFF', actionPerformed: { event ->
+				adbDisconnectTcp(serial)
+				disconnectTcpButton.setEnabled(false)
+				initButton.doClick()
+			})
+			disconnectTcpButton.setEnabled(false)
 		}
 
 		label ' ' // spacer
 		hbox {
 			installApkButton = button('Install APK', actionPerformed: { event ->
+				// some UI feedback within button
 				installApkButton.text = 'Installing...'
-				installApkButton.setEnabled(false)
 				adbInstallApk(serial)
 				installApkButton.text = 'Install APK'
-				installApkButton.setEnabled(true)
 			})
-			installApkButton.setEnabled(false)
 		}
 
 		label ' ' // spacer
@@ -262,7 +289,6 @@ frame = swing.frame(title:'Android Screen RECorder') {
 			takeScreenshotButton = button('Take Screenshot', actionPerformed: { event ->
 				adbTakeScreenshot(serial)
 			})
-			takeScreenshotButton.setEnabled(false)
 		}
 
 		hbox {
@@ -278,15 +304,16 @@ frame = swing.frame(title:'Android Screen RECorder') {
 					recordState = false
 				}
 			})
-			recordVideoButton.setEnabled(false)
 		}
 
 		label ' ' // spacer
 		label ' ' // spacer
 		hbox { label'Copyright 2017 Boddenberg.it' }
   	}
+		// init
+		uiState = false
+		enableUi()
 	}
-	// init
 	initButton.doClick()
 }
 
@@ -294,12 +321,15 @@ frame.pack()
 frame.size()
 frame.visible = true
 
-// toggleCharging
-// adb shell dumpsys battery set usb 1 (||0)
-// does not work on lineage, check samsung and nexus 5!
-// now record da shit!
+// functions
+void adbConnectTcp(String serial) {
+	println "foo"
+}
 
-// Functions will probably be put in non-ui file:
+void adbDisconnectTcp(String serial) {
+	println "foo"
+}
+
 void adbTakeScreenshot(String serial) {
 	println "adb serial: $serial"
 	"adb -s ${serial} wait-for-device shell screencap /mnt/sdcard/asrec.png".execute()
@@ -314,14 +344,6 @@ void adbRecordVideo(String serial) {
 void adbResetBattery(String serial){
 	println "resetBattery call: $serial"
 	"adb -s ${serial} wait-for-device shell dumpsys battery reset".execute()
-}
-
-// TODO: think about brightness + and - buttons, in case slider sulution doesn't work.
-//       using KEYCODE_BRIGHTNESS_DOWN KEYCODE_BRIGHTNESS_UP
-void adbSetBrightnessLevel(String serial, int level) {
-	int byteLevel = level * 25 / 10
-	println "adbSetBrightnessLevel call: $serial $level $byteLevel"
-	"adb -s ${serial} wait-for-device shell settings put system screen_brightness $byteLevel".execute()
 }
 
 void adbSetBatteryLevel(String serial, int level) {
@@ -365,7 +387,7 @@ void adbToggleAirplaneMode(serial) {
 	sleep(5000)
 	// if already toggled previously one ENTER is sufficient.
 	"adb -s ${serial} wait-for-device shell input keyevent KEYCODE_ENTER".execute()
-	sleep(1000)
+	sleep(300)
 	def newState = "adb -s ${serial} wait-for-device shell settings get global airplane_mode_on".execute().text
 	if(newState == oldState) {
 		// first time toggling, Airplane mode switch needs to be focused
@@ -389,7 +411,7 @@ String fileDialog(String title) {
 	null
 }
 
-// popups
+// pop ups
 void alert(String error) {
 	JOptionPane.showMessageDialog(null, error, "Asrec", JOptionPane.ERROR_MESSAGE);
 }
