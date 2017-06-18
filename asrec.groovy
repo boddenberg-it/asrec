@@ -262,8 +262,8 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 			connectTcpButton = button('ADB WiFi ON', actionPerformed: { event ->
 				adbConnectTcp(serial)
-				disconnectTcpButton.setEnabled(uiState)
 				initButton.doClick()
+				toggleAirplaneModeButton.setEnabled(false)
 			})
 			label ' '
 			disconnectTcpButton = button('ADB WIFI OFF', actionPerformed: { event ->
@@ -323,11 +323,20 @@ frame.visible = true
 
 // functions
 void adbConnectTcp(String serial) {
-	println "foo"
+	try {
+		def ip = "adb -s ${serial} wait-for-device shell ip -f inet addr show wlan0".execute().text
+		ip = ip.substring(ip.indexOf("inet")+4, ip.indexOf("/")).trim()
+		"adb -s ${serial} wait-for-device shell setprop service.adb.tcp.port 5555".execute()
+		"adb tcpip 5555".execute()
+		"adb connect ${ip}:5555".execute()
+	} catch(Exception e) {
+		alert("failed")
+	}
 }
 
 void adbDisconnectTcp(String serial) {
-	println "foo"
+	"adb -s ${serial} wait-for-device shell setprop service.adb.tcp.port -1".execute()
+	"adb disconnect ${serial}".execute()
 }
 
 void adbTakeScreenshot(String serial) {
