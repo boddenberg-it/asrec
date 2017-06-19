@@ -245,7 +245,6 @@ frame = swing.frame(title:'Android Screen RECorder') {
 		hbox {
 			resetBatteryButton = button('Reset Battery', actionPerformed: { event ->
 				adbResetBattery(serial);
-				// updating UI
 				batterySlider.value = 50
 				batteryLabel.text = "Battery: n/a %"
 				resetBatteryButton.setEnabled(false)
@@ -264,9 +263,10 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 		hbox {
 			toggleChargingButton = button('Toggle Charging Mode', actionPerformed: { event ->
-				if("adb shell dumpsys battery".execute().text.contains("USB powered: true")) {
+				if("adb -s ${serial} wait-for-device shell dumpsys battery".execute().text.contains("USB powered: true")) {
 					"adb -s ${serial} wait-for-device shell dumpsys battery set usb 0".execute()
 				} else {
+					println "discharging"
 					"adb -s ${serial} wait-for-device shell dumpsys battery set usb 1".execute()
 				}
 				resetChargingButton.setEnabled(true)
@@ -351,8 +351,11 @@ frame = swing.frame(title:'Android Screen RECorder') {
 					recordState = true
 				} else {
 					recordProcess.destroy()
+					recordVideoButton.text = "Pulling *.mp4..."
+					recordVideoButton.setEnabled(false)
 					"adb -s ${serial} wait-for-device pull /mnt/sdcard/asrec.mp4 ${fileDialog()}".execute()
 					recordVideoButton.text = "Record Video"
+					recordVideoButton.setEnabled(true)
 					recordState = false
 				}
 			})
@@ -399,11 +402,6 @@ void adbTakeScreenshot(String serial) {
 	println "adb serial: $serial"
 	"adb -s ${serial} wait-for-device shell screencap /mnt/sdcard/asrec.png".execute()
 	"adb -s ${serial} wait-for-device pull /mnt/sdcard/asrec.png ${fileDialog()}".execute().text
-}
-
-void adbRecordVideo(String serial) {
-	proc = "adb -s ${serial} wait-for-device shell screencap /mnt/sdcard/asrec.png".execute()
-	println "yeah parallelism!!"
 }
 
 void adbResetBattery(String serial){
