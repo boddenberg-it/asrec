@@ -171,7 +171,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 		menu('Asrec') {
 
 			menuItem('Help', actionPerformed: { event ->
-				"https://github.com/boddenberg-it/asrec/".browse()
+				"https://github.com/boddenberg-it/asrec/blob/master/README.md".browse()
 			})
 
 			menuItem('Info', actionPerformed: { event ->
