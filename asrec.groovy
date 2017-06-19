@@ -107,7 +107,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 		connectedDevices.each {
 			if(devices.indexOf(it) == -1) {
 				// log that one device has been added
-				log "Adding $it to devices"
+				log "Adding $it"
 				devices.add(it)
 			}
 		}
@@ -115,7 +115,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 		List disconnectedDevices = []
 		devices.each {
 			if (connectedDevices.indexOf(it) == -1) {
-				log "Removing $it from devices"
+				log "Removing $it"
 				disconnectedDevices.add(it)
 			}
 		}
@@ -145,7 +145,10 @@ frame = swing.frame(title:'Android Screen RECorder') {
 	}
 
 	def moreThanOneFound = {
-		if(init) {choosenDeviceLabel.text = "Device: Choose Device"}
+		if(init) {
+			choosenDeviceLabel.text = "Device: Choose Device"
+			init = false
+		}
 
 		// Updating "Choose Device" menu
 		chooseDeviceMenu.removeAll()
@@ -378,6 +381,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 			hbox{
 				adbWifiEnablerButton =  button('Enable ADB over WiFi', actionPerformed: { event ->
 					if(!connectTcpButton.isEnabled()) {
+						log "Enabling 'ADB over WiFi' mode"
 						connectTcpButton.setEnabled(true)
 						adbWifiEnablerButton.setEnabled(false)
 					} else {
@@ -399,17 +403,25 @@ frame.visible = true
 
 // adb functions
 String adbConnectTcp(String serial) {
+	log "ADB-WiFi connecting attempt on $serial"
 	try {
 		def ip = "adb -s ${serial} wait-for-device shell ip -f inet addr show wlan0".execute().text
 		ip = ip.substring(ip.indexOf("inet")+4, ip.indexOf("/")).trim()
-		log "ADB-WiFi: Try connecting to ${ip}:5555..."
+		log "ADB-WiFi try connecting to ${ip}:5555..."
 		println "adb -s ${serial} wait-for-device shell setprop service.adb.tcp.port 5555".execute().text
 		sleep(500)
 		println "adb -s ${serial} wait-for-device shell 'stop adbd; start adbd'".execute().text
 		sleep(500)
 		println "adb connect ${ip}:5555".execute().text
 		return "${ip}:5555"
+	} catch(java.lang.StringIndexOutOfBoundsException e) {
+		log "ADB-WiFi device $serial has no IP address"
+		alert("""Device does not have an IP address $serial
+
+			Is 'airplane mode' enabled?""")
+		return serial
 	} catch(Exception e) {
+		println "Stacktrace: ${e.toString()}"
 		return serial
 	}
 }
@@ -436,7 +448,7 @@ void adbResetBatteryAndChargingMode(String serial){
 
 void adbInstallApk(String serial) {
 	apkPath = fileDialog()
-	log "Installing APK on $serial: $apkPath"
+	log "Installing APK on $serial $apkPath"
 	// checking whether not null and ends with apk
 	if(apkPath && !apkPath.endsWith("apk")) {
 		log "ERROR: wrong file extension (!*.apk)"
@@ -449,12 +461,12 @@ void adbInstallApk(String serial) {
 
 	//try {
 		if(proc.text.contains("uccess")) {
-			log "APK installation successful on $serial: $apkPath"
+			log "APK installation successful on $serial $apkPath"
 			inform("APK installation successful!")
 		}
 		else { // instead of try-catch
 	//} catch(Exception e) {
-		log "APK installation failed on $serial: $apkPath"
+		log "APK installation failed on $serial $apkPath"
 		alert("APK installation failed!\n\n${apkPath}\n\n${e.toString()}")
 	}
 }
@@ -511,7 +523,7 @@ void adbToggleAirplaneMode(serial) {
 		log "Toggling airplane mode failed"
 		alert "\"Toggle Airplane Mode\" didn't succeed!\nnewState: ${newState}oldState: $oldState"
 	} else {
-		log "Toggling airplane mode succeed"
+		log "Toggling airplane mode succesfully"
 	}
 }
 
