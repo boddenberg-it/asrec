@@ -304,7 +304,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 			label ' '
 			hbox {
 				resetBatteryButton = button('Reset Battery', actionPerformed: { event ->
-					adbResetBattery(serial);
+					adbResetBatteryAndChargingMode(serial);
 					batterySlider.value = 50
 					batteryLabel.text = "Battery: n/a %"
 					resetBatteryButton.setEnabled(false)
@@ -314,7 +314,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 				label ' '
 				resetChargingButton = button('Reset Charging', actionPerformed: { event ->
-					adbResetChargingMode(serial)
+					adbResetBatteryAndChargingMode(serial)
 					resetChargingButton.setEnabled(false)
 				})
 				resetChargingButton.setEnabled(false)
@@ -414,8 +414,8 @@ void adbTakeScreenshot(String serial) {
 	log "Pulling of screenshot on $serial done"
 }
 
-void adbResetBattery(String serial){
-	log "Reset battery: $serial"
+void adbResetBatteryAndChargingMode(String serial){
+	log "Reset battery and charging mode of $serial"
 	"adb -s ${serial} wait-for-device shell dumpsys battery reset".execute()
 }
 
@@ -455,11 +455,6 @@ void adbStopRecording(String serial) {
 	log "Pulling video on $serial to $videoPath"
 	"adb -s ${serial} wait-for-device pull /sdcard/asrec.mp4 ${videoPath}".execute()
 	log "Pulling video sucessfully on $serial to $videoPath"
-}
-
-void adbResetChargingMode(String serial) {
-	log "Reset charging mode of $serial"
-	"adb -s ${serial} wait-for-device shell dumpsys battery reset".execute()
 }
 
 void adbToggleChargingMode(String serial) {
