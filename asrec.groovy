@@ -1,8 +1,8 @@
 #!/usr/bin/groovy
-// License: GPL
-// Author: andre@boddenberg.it
-// Copyright: boddenberg.it
-// Date: 19.06.2107
+/*
+	license GPL 3.0
+	copyright 2017 boddenberg.it
+*/
 
 import groovy.swing.SwingBuilder
 import javax.swing.JOptionPane
@@ -126,7 +126,6 @@ frame = swing.frame(title:'Android Screen RECorder') {
 				uiState = false
 				enableUi()
 			}
-			println "Removing disconnected Device: $it"
 			devices.removeAll(it)
 		}
 		// recall if no device left
@@ -135,9 +134,6 @@ frame = swing.frame(title:'Android Screen RECorder') {
 			choosenDeviceLabel.text = "Device: Not connected"
 			serial = ""
 		}
-
-		log "Using device: $serial"
-		println ""
 	}
 
 	def oneDeviceFound = {
@@ -200,24 +196,31 @@ frame = swing.frame(title:'Android Screen RECorder') {
 			label ' '
 			hbox {
 				initButton = button('Initialise', actionPerformed: { event ->
-					adbDaemonLabel.text = "ADB daemon: Initialising..."
+
 					// check wheter adb is installed and launching daemon (if not launched already)
 					if(!"adb devices".execute().text.contains("List of devices attached")){
+						adbDaemonLabel.text = "ADB daemon: Not initialised"
 						alert("adb not found. Is it installed?\nCheck Asrec -> Help for details!")
 						return
 					}
-					adbDaemonLabel.text = "ADB daemon: Initialised"
-					log "adb daemon initialised"
-					initButton.text = "Refresh"
+					if(adbDaemonLabel.text.equals("ADB daemon: Initialising...")) {
+						log "adb daemon initialised"
+						adbDaemonLabel.text = "ADB daemon: Initialised"
+						initButton.text = "Refresh"
+					}
 
 					updateDevices()
 					if (devices.size() == 1) { oneDeviceFound() }
 					if (devices.size() > 1) { moreThanOneFound() }
+					log "Using device: $serial"
+					// separating each "Refresh" lick with a newline
+					// to easily spot "Using device: xyz"
+					println ""
 				})
 			}
 
 			label ' '
-			hbox { adbDaemonLabel = label "ADB daemon: not initialised" }
+			hbox { adbDaemonLabel = label "ADB daemon: Initialising..." }
 
 			label ' '
 			hbox { choosenDeviceLabel = label 'Device: Not connected' }
