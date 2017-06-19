@@ -9,6 +9,6 @@ echo "[INFO] Asrec build succesfully"
 if [ "$1" = "test" ]; then
 	echo "[INFO] Starting asrec.jar"
 	java -jar asrec.jar &
-	pid="$!"; sleep 5
+	pid="$!"; sleep 20
 	kill "$pid"
 fi
