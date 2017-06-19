@@ -81,7 +81,9 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 			if(!uiState) connectTcpButton.setEnabled(uiState)
 
-			if(!choosenDeviceLabel.text.contains(":5555")) {
+			def deviceLabel = choosenDeviceLabel.text
+
+			if(!deviceLabel.contains(":5555") && !deviceLabel.contains("Not connected")) {
 				toggleAirplaneModeButton.setEnabled(true)
 				if(adbOverTcpState){
 					connectTcpButton.setEnabled(true)
@@ -96,10 +98,14 @@ frame = swing.frame(title:'Android Screen RECorder') {
 				toggleAirplaneModeButton.setEnabled(false)
 			}
 
-			if(choosenDeviceLabel.text.contains("Not connected")) {
+			if(choosenDeviceLabel.text.contains("onnected")) {
+				println "FOOOOOOOOOOOOOoo"
+				serial = ""
 				toggleAirplaneModeButton.setEnabled(false)
+				disconnectTcpButton.setEnabled(false)
 				adbWifiEnablerButton.setEnabled(false)
 			}
+
 		}
 
 		vbox {
@@ -143,7 +149,10 @@ frame = swing.frame(title:'Android Screen RECorder') {
 								println "Removing disconnected Device: $it"
 								devices.removeAll(it)
 							}
-							if(devices.size() == 0) choosenDeviceLabel.text = "Device: Not connected"
+							if(devices.size() == 0) {
+								choosenDeviceLabel.text = "Device: Not connected"
+								serial = ""
+							}
 						}
 
 						def oneDeviceFound = {
@@ -298,8 +307,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 					adbDisconnectTcp(serial)
 					adbOverTcpState = false
 					initButton.doClick()
-					disconnectTcpButton.setEnabled(false)
-					adbWifiEnablerButton.setEnabled(true)
+					enableUi()
 				}
 			})
 			disconnectTcpButton.setEnabled(false)
@@ -310,12 +318,8 @@ frame = swing.frame(title:'Android Screen RECorder') {
 				if(!connectTcpButton.isEnabled()) {
 					connectTcpButton.setEnabled(true)
 					adbWifiEnablerButton.setEnabled(false)
-				} else {b
-					if(disconnectTcpButton.isEnabled()) {
-							alert("You need first to click \"ADB WiFi OFF\"")
-					} else {
-						connectTcpButton.setEnabled(false)
-					}
+				} else {
+					alert("You need first to click \"ADB WiFi OFF\"")
 				}
 			})
 		}
