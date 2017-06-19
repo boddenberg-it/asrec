@@ -11,8 +11,6 @@ if [ "$1" = "test" ]; then
 	java -jar asrec.jar &
 	pid="$!"; sleep 20
 	kill "$pid"
-fi
-
-if [ "$1" = "run" ]; then
+elif [ "$1" = "run" ]; then
 	java -jar asrec.jar
 fi
