@@ -2,7 +2,7 @@
 // License: GPL
 // Author: andre@boddenberg.it
 // Copyright: boddenberg.it
-// Date: 18.07.2107
+// Date: 19.06.2107
 
 import groovy.swing.SwingBuilder
 import javax.swing.JOptionPane
@@ -89,6 +89,10 @@ frame = swing.frame(title:'Android Screen RECorder') {
 		}
 	}
 
+	String.metaClass.browse = { ->
+		java.awt.Desktop.desktop.browse(new URI(delegate))
+	}
+
 	// updateDevices
 	def updateDevices = {
 		def connectedDevices = []
@@ -165,15 +169,23 @@ frame = swing.frame(title:'Android Screen RECorder') {
 	// actual UI compoments
 	menuBar {
 		menu('Asrec') {
-			menuItem('Preferences', actionPerformed: { event ->
-				alert("HALLO WELT!")
-			})
+
 			menuItem('Help', actionPerformed: { event ->
-				alert("HALLO WELT!")
+				"https://github.com/boddenberg-it/asrec/".browse()
 			})
+
 			menuItem('Info', actionPerformed: { event ->
-				alert("Asrec: $version")
+				inform("""Android Screen RECorder
+
+					version: $version
+					author: André Boddenberg
+
+					license: GPL 3.0
+					https://www.gnu.org/licenses/gpl-3.0.en.html
+
+					copyright 2017 boddenberg.it""")
 			})
+
 		}
 		chooseDeviceMenu = menu('Choose Device') {}
 		// disabled, only enabled if multiple devices.
@@ -517,7 +529,7 @@ String fileDialog(String title) {
 	if (dialog.showOpenDialog() == 0) {
 		return dialog.selectedFile
 	}
-	null
+	false
 }
 
 // pop ups
