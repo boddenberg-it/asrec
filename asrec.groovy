@@ -6,6 +6,7 @@ import groovy.transform.Field
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.JOptionPane
+import javax.swing.JCheckBox
 import javax.swing.SwingUtilities
 
 // UI
@@ -27,6 +28,7 @@ def resetBatteryButton
 def resetChargingButton
 def connectTcpButton
 def disconnectTcpButton
+def adbWifiEnablerButton
 def toggleAirplaneModeButton
 def toggleChargingButton
 def takeScreenshotButton
@@ -45,6 +47,7 @@ def uiState = false
 def serial = ""
 def recordState = false
 def recordProcess
+def adbOverTcpState = false
 
 swing = new SwingBuilder()
 
@@ -68,20 +71,38 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 		// helper closures
 		def enableUi = {
-			toggleAirplaneModeButton.setEnabled(uiState)
+			toggleChargingButton.setEnabled(uiState)
 			installApkButton.setEnabled(uiState)
 			takeScreenshotButton.setEnabled(uiState)
 			recordVideoButton.setEnabled(uiState)
 			batterySlider.setEnabled(uiState)
 			brightnessDownButton.setEnabled(uiState)
 			brightnessUpButton.setEnabled(uiState)
-			toggleChargingButton.setEnabled(uiState)
-			connectTcpButton.setEnabled(uiState)
+
+			if(!uiState) connectTcpButton.setEnabled(uiState)
+
+			if(!choosenDeviceLabel.text.contains(":5555")) {
+				toggleAirplaneModeButton.setEnabled(true)
+				if(adbOverTcpState){
+					connectTcpButton.setEnabled(true)
+					disconnectTcpButton.setEnabled(false)
+				} else {
+					adbWifiEnablerButton.setEnabled(true)
+				}
+			} else {
+				disconnectTcpButton.setEnabled(true)
+				connectTcpButton.setEnabled(false)
+				adbWifiEnablerButton.setEnabled(false)
+				toggleAirplaneModeButton.setEnabled(false)
+			}
+
+			if(choosenDeviceLabel.text.contains("Not connected")) {
+				toggleAirplaneModeButton.setEnabled(false)
+				adbWifiEnablerButton.setEnabled(false)
+			}
 		}
 
-		// TODO: remove brightness slider, buttons are enough  and work always!
 		vbox {
-
 			// init/refresh button
 			label ' '
 			hbox {
@@ -179,7 +200,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 		label ' ' // spacer
 		hbox {
-			choosenDeviceLabel = label 'Device: not connected'
+			choosenDeviceLabel = label 'Device: Not connected'
 		}
 
 		label ' ' // spacer
@@ -260,22 +281,48 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 		hbox {
 
-			connectTcpButton = button('ADB WiFi ON', actionPerformed: { event ->
-				adbConnectTcp(serial)
-				//initButton.doClick()
-				toggleAirplaneModeButton.setEnabled(false)
-				disconnectTcpButton.setEnabled(true)
-			})
+			connectTcpButton = button('Connect ADB WiFi', actionPerformed: { event ->
+				serial = adbConnectTcp(serial)
+				choosenDeviceLabel.text = "Device: $serial"
+				adbOverTcpState = true
+				initButton.doClick()
+				enableUi()
+				})
+			connectTcpButton.setEnabled(false)
+
 			label ' '
-			disconnectTcpButton = button('ADB WIFI OFF', actionPerformed: { event ->
-				adbDisconnectTcp(serial)
-				disconnectTcpButton.setEnabled(false)
-				//initButton.doClick()
+			disconnectTcpButton = button('Disconnect ADB WiFi', actionPerformed: { event ->
+				if(resetChargingButton.isEnabled() || resetBatteryButton.isEnabled()) {
+					alert("You need to reset battery and charging modde, before disconnecting!")
+				} else {
+					adbDisconnectTcp(serial)
+					adbOverTcpState = false
+					initButton.doClick()
+					disconnectTcpButton.setEnabled(false)
+					adbWifiEnablerButton.setEnabled(true)
+				}
 			})
 			disconnectTcpButton.setEnabled(false)
 		}
 
+		hbox{
+			adbWifiEnablerButton =  button('Enable ADB over WiFi', actionPerformed: { event ->
+				if(!connectTcpButton.isEnabled()) {
+					connectTcpButton.setEnabled(true)
+					adbWifiEnablerButton.setEnabled(false)
+				} else {b
+					if(disconnectTcpButton.isEnabled()) {
+							alert("You need first to click \"ADB WiFi OFF\"")
+					} else {
+						connectTcpButton.setEnabled(false)
+					}
+				}
+			})
+		}
+
 		label ' ' // spacer
+		label ' ' // spacer
+
 		hbox {
 			installApkButton = button('Install APK', actionPerformed: { event ->
 				// some UI feedback within button
@@ -288,7 +335,11 @@ frame = swing.frame(title:'Android Screen RECorder') {
 		label ' ' // spacer
 		hbox {
 			takeScreenshotButton = button('Take Screenshot', actionPerformed: { event ->
+				takeScreenshotButton.text = "Taking Screenshot..."
+				takeScreenshotButton.setEnabled(false)
 				adbTakeScreenshot(serial)
+				takeScreenshotButton.setEnabled(true)
+				takeScreenshotButton.text = "Take Screenshot"
 			})
 		}
 
@@ -323,7 +374,7 @@ frame.size()
 frame.visible = true
 
 // functions
-void adbConnectTcp(String serial) {
+String adbConnectTcp(String serial) {
 	try {
 		def ip = "adb -s ${serial} wait-for-device shell ip -f inet addr show wlan0".execute().text
 		ip = ip.substring(ip.indexOf("inet")+4, ip.indexOf("/")).trim()
@@ -333,8 +384,9 @@ void adbConnectTcp(String serial) {
 		"adb -s ${serial} wait-for-device shell 'stop adbd; start adbd'".execute()
 		sleep(500)
 		println "adb connect ${ip}:5555".execute().text
+		return "${ip}:5555"
 	} catch(Exception e) {
-		alert("failed")
+		return serial
 	}
 }
 
@@ -376,7 +428,7 @@ void adbInstallApk(String serial) {
 	if (apkPath) {
 		println "here it comes: ${apkPath}"
 		def proc =  "adb -s ${serial} install -r -d ${apkPath}".execute()
-		proc.waitForOrKill(15000)
+		proc.waitForOrKill(30000)
 
 		try {
 			String stdout = proc.text
@@ -387,8 +439,7 @@ void adbInstallApk(String serial) {
 				inform("APK installation successful!")
 			}
 		} catch(Exception e) {
-			println e.toString()
-			alert("APK installation failed!\n\n${apkPath}\n")
+			alert("APK installation failed!\n\n${apkPath}\n\n${e.toString()}")
 		}
 	}
 }
@@ -397,10 +448,10 @@ void adbInstallApk(String serial) {
 void adbToggleAirplaneMode(serial) {
 	def oldState = "adb -s ${serial} wait-for-device shell settings get global airplane_mode_on".execute().text
 	"adb -s ${serial} wait-for-device shell am start -a android.settings.AIRPLANE_MODE_SETTINGS".execute()
-	sleep(5000)
+	sleep(3000)
 	// if already toggled previously one ENTER is sufficient.
 	"adb -s ${serial} wait-for-device shell input keyevent KEYCODE_ENTER".execute()
-	sleep(300)
+	sleep(200)
 	def newState = "adb -s ${serial} wait-for-device shell settings get global airplane_mode_on".execute().text
 	if(newState == oldState) {
 		// first time toggling, Airplane mode switch needs to be focused
