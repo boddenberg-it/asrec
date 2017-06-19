@@ -1,13 +1,12 @@
 #!/usr/bin/groovy
 
 import groovy.swing.SwingBuilder
-import groovy.transform.Field
-
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.JOptionPane
-import javax.swing.JCheckBox
-import javax.swing.SwingUtilities
+
+// import groovy.transform.Field
+// import javax.swing.SwingUtilities
 
 // UI
 def adbDaemonLabel
@@ -212,6 +211,56 @@ frame = swing.frame(title:'Android Screen RECorder') {
 			choosenDeviceLabel = label 'Device: Not connected'
 		}
 
+				label ' ' // spacer
+
+				hbox {
+					installApkButton = button('Install APK', actionPerformed: { event ->
+						// some UI feedback within button
+						installApkButton.text = 'Installing...'
+						adbInstallApk(serial)
+						installApkButton.text = 'Install APK'
+					})
+				}
+
+				label ' ' // spacer
+				hbox {
+					takeScreenshotButton = button('Take Screenshot', actionPerformed: { event ->
+						takeScreenshotButton.text = "Taking Screenshot..."
+						takeScreenshotButton.setEnabled(false)
+						adbTakeScreenshot(serial)
+						takeScreenshotButton.setEnabled(true)
+						takeScreenshotButton.text = "Take Screenshot"
+					})
+				}
+
+				hbox {
+					recordVideoButton = button('Record Video', actionPerformed: { event ->
+						def recordSanity = "adb -s ${serial} wait-for-device shell screenrecord --help".execute().text
+						if(recordSanity.contains("screenrecord: not found")) {
+							alert("adb shell screenrecord not supported by device")
+							recordVideoButton.setEnabled(false)
+							return
+						}
+
+						if(!recordState) {
+							recordProcess = "adb -s ${serial} wait-for-device shell screenrecord --bugreport --size \"1280x720\" /sdcard/asrec.mp4".execute()
+							recordVideoButton.text = "Stop Recording"
+							recordState = true
+						} else {
+							recordProcess.destroy()
+							recordVideoButton.text = "Pulling *.mp4..."
+							recordVideoButton.setEnabled(false)
+							"adb -s ${serial} wait-for-device pull /sdcard/asrec.mp4 ${fileDialog()}".execute()
+							recordVideoButton.text = "Record Video"
+							recordVideoButton.setEnabled(true)
+							recordState = false
+						}
+					})
+				}
+
+		label ' '
+		label ' '
+		hbox{ label '~ Testing Features ~' }
 		label ' ' // spacer
 		hbox {
 			brightnessDownButton = button('Brightness Down', actionPerformed: { event ->
@@ -325,48 +374,6 @@ frame = swing.frame(title:'Android Screen RECorder') {
 		}
 
 		label ' ' // spacer
-		label ' ' // spacer
-
-		hbox {
-			installApkButton = button('Install APK', actionPerformed: { event ->
-				// some UI feedback within button
-				installApkButton.text = 'Installing...'
-				adbInstallApk(serial)
-				installApkButton.text = 'Install APK'
-			})
-		}
-
-		label ' ' // spacer
-		hbox {
-			takeScreenshotButton = button('Take Screenshot', actionPerformed: { event ->
-				takeScreenshotButton.text = "Taking Screenshot..."
-				takeScreenshotButton.setEnabled(false)
-				adbTakeScreenshot(serial)
-				takeScreenshotButton.setEnabled(true)
-				takeScreenshotButton.text = "Take Screenshot"
-			})
-		}
-
-		hbox {
-			recordVideoButton = button('Record Video', actionPerformed: { event ->
-				if(!recordState) {
-					recordProcess = "adb -s ${serial} wait-for-device shell screenrecord /mnt/sdcard/asrec.mp4".execute()
-					recordVideoButton.text = "Stop Recording"
-					recordState = true
-				} else {
-					recordProcess.destroy()
-					recordVideoButton.text = "Pulling *.mp4..."
-					recordVideoButton.setEnabled(false)
-					"adb -s ${serial} wait-for-device pull /mnt/sdcard/asrec.mp4 ${fileDialog()}".execute()
-					recordVideoButton.text = "Record Video"
-					recordVideoButton.setEnabled(true)
-					recordState = false
-				}
-			})
-		}
-
-		label ' ' // spacer
-		label ' ' // spacer
 		hbox { label'Copyright 2017 Boddenberg.it' }
   	}
 		// init
@@ -390,7 +397,7 @@ String adbConnectTcp(String serial) {
 		sleep(500)
 		"adb -s ${serial} wait-for-device shell 'stop adbd; start adbd'".execute()
 		sleep(500)
-		println "adb connect ${ip}:5555".execute().text
+		println "adb connect ${ip}".execute().text
 		return "${ip}:5555"
 	} catch(Exception e) {
 		return serial
