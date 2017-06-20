@@ -45,7 +45,7 @@ String serial = ""
 List devices = []
 Process recordProcess
 
-String version = "0.1"
+String version = "alpha"
 log "Initialising asrec..."
 
 swing = new SwingBuilder()
