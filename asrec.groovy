@@ -377,7 +377,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 			// "Enable ADB over WiFi"
 			hbox{
-				adbWifiEnablerButton =  button('Enable ADB over WiFi', actionPerformed: { event ->
+				adbWifiEnablerButton =  button('Enable ADB over WiFi (rooted?)', actionPerformed: { event ->
 					if(!connectTcpButton.isEnabled()) {
 						log "Enabling 'ADB over WiFi' mode"
 						connectTcpButton.setEnabled(true)
