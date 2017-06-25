@@ -23,9 +23,7 @@ def connectTcpButton
 def disconnectTcpButton
 def initButton
 def installApkButton
-def recordVideoButton
-def resetBatteryButton
-def resetChargingButton
+def resetBatteryAndChargingModeButton
 def setBatteryButton
 def setBrightnessButton
 def takeScreenshotButton
@@ -313,7 +311,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 			 		log "Setting battery level to ${batteryValue}"
 			 		adbSetBatteryLevel(serial, batterySlider.getValue())
 			 		setBatteryButton.setEnabled(false)
-			 		resetBatteryButton.setEnabled(true)
+					resetBatteryAndChargingModeButton.setEnabled(true)
 				})
 				setBatteryButton.setEnabled(false)
 			}
@@ -321,28 +319,28 @@ frame = swing.frame(title:'Android Screen RECorder') {
 			// reset battery and charging mode
 			label ' '
 			hbox {
-				resetBatteryButton = button('Reset Battery', actionPerformed: { event ->
+				resetBatteryAndChargingModeButton = button('Reset Battery', actionPerformed: { event ->
 					adbResetBatteryAndChargingMode(serial);
 					batterySlider.value = 50
 					batteryLabel.text = "Battery: n/a %"
-					resetBatteryButton.setEnabled(false)
+					resetBatteryAndChargingModeButton.setEnabled(false)
 					setBatteryButton.setEnabled(false)
 				})
-				resetBatteryButton.setEnabled(false)
+				resetBatteryAndChargingModeButton.setEnabled(false)
 
 				label ' '
-				resetChargingButton = button('Reset Charging', actionPerformed: { event ->
+				resetBatteryAndChargingModeButton = button('Reset Charging', actionPerformed: { event ->
 					adbResetBatteryAndChargingMode(serial)
-					resetChargingButton.setEnabled(false)
+					resetBatteryAndChargingModeButton.setEnabled(false)
 				})
-				resetChargingButton.setEnabled(false)
+				resetBatteryAndChargingModeButton.setEnabled(false)
 			}
 
 			// toggle charging mode
 			hbox {
 				toggleChargingButton = button('Toggle Charging Mode', actionPerformed: { event ->
 					adbToggleChargingMode(serial)
-					resetChargingButton.setEnabled(true)
+					resetBatteryAndChargingModeButton.setEnabled(true)
 				})
 			}
 
@@ -365,7 +363,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 				label ' '
 				disconnectTcpButton = button('Disconnect ADB WiFi', actionPerformed: { event ->
-					if(resetChargingButton.isEnabled() || resetBatteryButton.isEnabled()) {
+					if(resetBatteryAndChargingModeButton.isEnabled()) {
 						alert("You need to reset battery and charging modde, before disconnecting!")
 					} else {
 						adbDisconnectTcp(serial)
