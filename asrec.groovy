@@ -435,7 +435,7 @@ void adbTakeScreenshot(String serial) {
 	"adb -s ${serial} wait-for-device shell screencap /mnt/sdcard/asrec.png".execute()
 	def filePath = fileDialog()
 	log "Pulling screenshot of $serial to $filePath"
-	"adb -s ${serial} wait-for-device pull /mnt/sdcard/asrec.png ${filePath}".execute().text
+	"adb -s ${serial} wait-for-device pull /mnt/sdcard/asrec.png ${filePath}.png".execute().text
 	log "Pulling of screenshot on $serial done"
 }
 
@@ -478,7 +478,7 @@ void adbStopRecording(String serial) {
 	log "Stop recording on $serial"
 	def videoPath = fileDialog()
 	log "Pulling video on $serial to $videoPath"
-	"adb -s ${serial} wait-for-device pull /sdcard/asrec.mp4 ${videoPath}".execute()
+	"adb -s ${serial} wait-for-device pull /sdcard/asrec.mp4 ${videoPath}.mp4".execute()
 	log "Pulling video sucessfully on $serial to $videoPath"
 }
 
@@ -506,7 +506,7 @@ void adbSetBatteryLevel(String serial, int level) {
 
 // check out the airplaneModeOn and Off script from XYZ
 void adbToggleAirplaneMode(serial) {
-	def oldState = "adb -s ${serial} wait-for-device shell settings get global airplane_mode_on".execute().text
+	def oldState = "adb -s ${serial} wait-for-device shell settings get global airplane_mode_on".execute().text.trim()
 	log "Toggling airplane mode on $serial - $oldState"
 
 	"adb -s ${serial} wait-for-device shell am start -a android.settings.AIRPLANE_MODE_SETTINGS".execute()
