@@ -501,6 +501,11 @@ boolean adbCheckRecordCapability(String serial) {
 	return false
 }
 
+void adbSetBatteryLevel(String serial, int level) {
+	log "Setting battery level of $serial to $level"
+	"adb -s ${serial} wait-for-device shell dumpsys battery set level $level".execute()
+}
+
 // check out the airplaneModeOn and Off script from XYZ
 void adbToggleAirplaneMode(serial) {
 	def oldState = "adb -s ${serial} wait-for-device shell settings get global airplane_mode_on".execute().text
