@@ -486,10 +486,10 @@ void adbStopRecording(String serial) {
 
 void adbToggleChargingMode(String serial) {
 	if("adb -s ${serial} wait-for-device shell dumpsys battery".execute().text.contains("USB powered: true")) {
-		log "Set charging mode to TRUE"
+		log "Set charging mode to FALSE"
 		"adb -s ${serial} wait-for-device shell dumpsys battery set usb 0".execute()
 	} else {
-		log "Set charging mode to FALSE"
+		log "Set charging mode to TRUE"
 		"adb -s ${serial} wait-for-device shell dumpsys battery set usb 1".execute()
 	}
 }
