@@ -255,7 +255,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 				recordVideoButton = button('Record Video', actionPerformed: { event ->
 					//def recordSanity = "adb -s ${serial} wait-for-device shell screenrecord --help".execute().text
 					//if(recordSanity.contains("screenrecord: not found")) {
-					if(!adbCheckRecordCapability) {
+					if(!adbCheckRecordCapability(serial)) {
 						alert("adb shell screenrecord not supported by device")
 						recordVideoButton.setEnabled(false)
 						return
@@ -263,7 +263,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 					if(!recordState) {
 						recordState = true
 
-						adbStartRecording(serial)
+						recordProcess = adbStartRecording(serial)
 						recordVideoButton.text = "Stop Recording"
 					} else {
 						recordProcess.destroy()
@@ -471,9 +471,9 @@ void adbInstallApk(String serial) {
 	}
 }
 
-void adbStartRecording(String seria) {
+Process adbStartRecording(String seria) {
 	log "Start recording on $serial"
-	recordProcess = "adb -s ${serial} wait-for-device shell screenrecord --bugreport --size \"1280x720\" /sdcard/asrec.mp4".execute()
+	"adb -s ${serial} wait-for-device shell screenrecord --bugreport --size \"1280x720\" /sdcard/asrec.mp4".execute()
 }
 
 void adbStopRecording(String serial) {
@@ -496,7 +496,7 @@ void adbToggleChargingMode(String serial) {
 
 boolean adbCheckRecordCapability(String serial) {
 	def recordSanity = "adb -s ${serial} wait-for-device shell screenrecord --help".execute().text
-	if(recordSanity.contains("screenrecord: not found")) return true
+	if(!recordSanity.contains("screenrecord: not found")) return true
 	log "ERROR: device $serial does NOT support \"adb shell screenrecord\""
 	return false
 }
