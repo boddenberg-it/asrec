@@ -356,7 +356,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 					serial = adbConnectTcp(serial)
 					choosenDeviceLabel.text = "Device: $serial"
 					adbOverTcpState = true
-					initButton.doClick()
+					uiState = true
 					enableUi()
 				})
 				connectTcpButton.setEnabled(false)
