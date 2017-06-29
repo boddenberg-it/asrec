@@ -336,19 +336,12 @@ frame = swing.frame(title:'Android Screen RECorder') {
 			// reset battery and charging mode
 			label ' '
 			hbox {
-				resetBatteryAndChargingModeButton = button('Reset Battery', actionPerformed: { event ->
+				resetBatteryAndChargingModeButton = button('Reset Battery/Charging Mode', actionPerformed: { event ->
 					adbResetBatteryAndChargingMode(serial);
 					batterySlider.value = 50
 					batteryLabel.text = "Battery: n/a %"
 					resetBatteryAndChargingModeButton.setEnabled(false)
 					setBatteryButton.setEnabled(false)
-				})
-				resetBatteryAndChargingModeButton.setEnabled(false)
-
-				label ' '
-				resetBatteryAndChargingModeButton = button('Reset Charging', actionPerformed: { event ->
-					adbResetBatteryAndChargingMode(serial)
-					resetBatteryAndChargingModeButton.setEnabled(false)
 				})
 				resetBatteryAndChargingModeButton.setEnabled(false)
 			}
