@@ -414,7 +414,7 @@ frame.visible = true
 
 // ADB functions
 String adbConnectTcp(String serial) {
-	log "ADB-WiFi connecting attempt on $serial"
+	log "ADB-WiFi connecting attempt"
 	try {
 		def ip = "adb -s ${serial} wait-for-device shell ip -f inet addr show wlan0".execute().text
 		ip = ip.substring(ip.indexOf("inet")+4, ip.indexOf("/")).trim()
@@ -427,8 +427,8 @@ String adbConnectTcp(String serial) {
 		return "${ip}:5555"
 
 	} catch(java.lang.StringIndexOutOfBoundsException e) {
-		log "ADB-WiFi device $serial has no IP address"
-		alert("""Device does not have an IP address $serial
+		log "ADB-WiFi device has no IP address"
+		alert("""Device does not have an IP address!
 
 			Is 'airplane mode' enabled?""")
 	} catch(Exception e) {
@@ -438,37 +438,37 @@ String adbConnectTcp(String serial) {
 }
 
 void adbDisconnectTcp(String serial) {
-	log "ADB-WiFi: Disconnecting $serial"
+	log "ADB-WiFi: Disconnecting"
 	"adb -s ${serial} wait-for-device shell setprop service.adb.tcp.port -1".execute()
 	"adb disconnect ${serial}".execute()
 }
 
 void adbTakeScreenshot(String serial) {
-	log "Taking screenshot of $serial"
+	log "Taking screenshot"
 	"adb -s ${serial} wait-for-device shell screencap /mnt/sdcard/asrec.png".execute()
 
 	def filePath = fileDialog()
 	if(!filePath) {
-		log "Cancelled fileDialog for Take Screenshot on $serial"
+		log "Cancelled fileDialog for Take Screenshot"
 		return
 	}
 
-	log "Pulling screenshot of $serial to $filePath"
+	log "Pulling screenshot to ${filePath}.png"
 	"adb -s ${serial} wait-for-device pull /mnt/sdcard/asrec.png ${filePath}.png".execute().text
-	log "Pulling of screenshot on $serial done"
+	log "Screenshot pulled"
 }
 
 void adbResetBatteryAndChargingMode(String serial){
-	log "Reset battery and charging mode of $serial"
+	log "Reset battery and charging mode"
 	"adb -s ${serial} wait-for-device shell dumpsys battery reset".execute()
 }
 
 void adbInstallApk(String serial) {
-	log "Open Installing APK fileDialog on $serial"
+	log "Open Installing APK fileDialog"
 	apkPath = fileDialog()
 	if(!apkPath) return
 
-	log "Installing APK on $serial $apkPath"
+	log "Installing APK $apkPath"
 	// checking whether not null and ends with apk
 	if(apkPath && !apkPath.endsWith("apk")) {
 		log "ERROR: wrong file extension (!*.apk)"
@@ -480,39 +480,39 @@ void adbInstallApk(String serial) {
 	// TODO: think about preferences menu to set "install timeout in seconds"
 	proc.waitForOrKill(60000)
 		if(proc.text.contains("uccess")) {
-			log "APK installation successful on $serial $apkPath"
+			log "APK installation successful"
 			inform("APK installation successful!")
 		} else {
-			log "APK installation failed on $serial $apkPath"
+			log "APK installation failed"
 			alert("APK installation failed!\n\n${apkPath}\n\n${apkPath}")
 		}
 }
 
 Process adbStartRecording(String serial) {
-	log "Clear logcat on $serial"
+	log "Clear logcat"
 	"adb -s ${serial} wait-for-device logcat -c"
-	log "Start recording on $serial"
+	log "Start recording"
 	"adb -s ${serial} wait-for-device shell screenrecord --bugreport --size \"1280x720\" /sdcard/asrec.mp4".execute()
 }
 
 void adbStopRecording(String serial) {
-	log "Stop recording on $serial"
+	log "Stop recording"
 	def logcat_content = "adb -s ${serial} wait-for-device logcat -d".execute().text
-	log "Logcat fetched of $serial"
+	log "Logcat fetched"
 
 	def filePath = fileDialog()
 	if(!filePath) {
-		log "Cancelled fileDialog for Recording on $serial"
+		log "Cancelled fileDialog for Recording"
 		return
 	}
 
 	def logcat = new File("${filePath}_logcat.txt")
 	logcat << logcat_content
-	log "Logcat of $serial fetched to ${filePath}_logcat.txt"
+	log "Logcat fetched to ${filePath}_logcat.txt"
 
-	log "Pulling video on $serial to $filePath"
+	log "Pulling video to ${filePath}.mp4"
 	"adb -s ${serial} wait-for-device pull /sdcard/asrec.mp4 ${filePath}.mp4".execute()
-	log "Pulling video sucessfully on $serial to $filePath"
+	log "Pulling video sucessfully to ${filePath}.mp4"
 }
 
 void adbToggleChargingMode(String serial) {
@@ -528,19 +528,19 @@ void adbToggleChargingMode(String serial) {
 boolean adbCheckRecordCapability(String serial) {
 	def recordSanity = "adb -s ${serial} wait-for-device shell screenrecord --help".execute().text
 	if(!recordSanity.contains("screenrecord: not found")) return true
-	log "ERROR: device $serial does NOT support \"adb shell screenrecord\""
+	log "ERROR: device does NOT support \"adb shell screenrecord\""
 	return false
 }
 
 void adbSetBatteryLevel(String serial, int level) {
-	log "Setting battery level of $serial to $level"
+	log "Setting battery level of to $level"
 	"adb -s ${serial} wait-for-device shell dumpsys battery set level $level".execute()
 }
 
 // check out the airplaneModeOn and Off script from XYZ
 void adbToggleAirplaneMode(serial) {
 	def oldState = "adb -s ${serial} wait-for-device shell settings get global airplane_mode_on".execute().text.trim()
-	log "Toggling airplane mode on $serial - $oldState"
+	log "Toggling airplane mode - $oldState"
 
 	"adb -s ${serial} wait-for-device shell am start -a android.settings.AIRPLANE_MODE_SETTINGS".execute()
 	sleep(3000)
@@ -564,12 +564,12 @@ void adbToggleAirplaneMode(serial) {
 }
 
 void adbBrightnessDown(String serial) {
-	log "Lowering brightness on $serial"
+	log "Lowering brightness"
 	"adb -s ${serial} wait-for-device shell input keyevent KEYCODE_BRIGHTNESS_DOWN".execute()
 }
 
 void adbBrightnessUp(String serial) {
-	log "Increasing brightness on $serial"
+	log "Increasing brightness on"
 	"adb -s ${serial} wait-for-device shell input keyevent KEYCODE_BRIGHTNESS_UP".execute()
 }
 
