@@ -15,6 +15,7 @@ def adbDaemonLabel
 def batteryLabel
 def brightnessLabel
 def choosenDeviceLabel
+def testingFeaturesLabel
 // buttons
 def adbWifiEnablerButton
 def brightnessDownButton
@@ -33,6 +34,11 @@ def toggleChargingButton
 def batterySlider
 // menu
 def chooseDeviceMenu
+// frame sizes (normal-advanced mode)
+int am_width
+int nm_width
+int am_height
+int nm_height
 
 boolean init = true
 boolean uiState = false
@@ -184,8 +190,19 @@ frame = swing.frame(title:'Android Screen RECorder') {
 			})
 
 		}
+		menu('Mode') {
+			menuItem('Normal', actionPerformed: { event ->
+				frame.resize(nm_width, nm_height)
+				testingFeaturesLabel.text = "Copyright Boddenberg.it 2017"
+			})
+			menuItem('Advanced', actionPerformed: { event ->
+				frame.resize(am_width, am_height)
+				testingFeaturesLabel.text = "~ Testing Features ~"
+			})
+		}
+
 		chooseDeviceMenu = menu('Choose Device') {}
-		// disabled, only enabled if multiple devices.
+		// disabled, only enabled if multiple devices are connected.
 		chooseDeviceMenu.setEnabled(false)
 	}
 
@@ -278,7 +295,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 			label ' '
 			label ' '
-			hbox{ label '~ Testing Features ~' }
+			hbox { testingFeaturesLabel = label 'Copyright Boddenberg.it 2017' }
 			label ' '
 
 			// brightness
@@ -388,15 +405,24 @@ frame = swing.frame(title:'Android Screen RECorder') {
 				})
 			}
 			label ' '
-			hbox { label'Copyright 2017 Boddenberg.it' }
+			hbox { label'Copyright Boddenberg.it 2017' }
   	}
 		enableUi()
 	}
 	initButton.doClick()
 }
 
+// get host specific size
 frame.pack()
-frame.size()
+def s = frame.getContentPane().getSize()
+// widths testing and normal mode
+am_width = s.width * 1.05
+nm_width = s.width * 0.8
+// heights testing and normal mode
+am_height = s.height * 1.1
+nm_height = s.height * 0.6
+// init with normal mode
+frame.resize(nm_width, nm_height)
 frame.visible = true
 
 // adb functions
@@ -412,16 +438,16 @@ String adbConnectTcp(String serial) {
 		sleep(500)
 		println "adb connect ${ip}:5555".execute().text
 		return "${ip}:5555"
+
 	} catch(java.lang.StringIndexOutOfBoundsException e) {
 		log "ADB-WiFi device $serial has no IP address"
 		alert("""Device does not have an IP address $serial
 
 			Is 'airplane mode' enabled?""")
-		return serial
 	} catch(Exception e) {
 		println "Stacktrace: ${e.toString()}"
-		return serial
 	}
+	return serial
 }
 
 void adbDisconnectTcp(String serial) {
@@ -455,31 +481,37 @@ void adbInstallApk(String serial) {
 	}
 
 	def proc =  "adb -s ${serial} install -r -d ${apkPath}".execute()
+	// TODO: think about preferences menu to set "install timeout in seconds"
 	proc.waitForOrKill(30000)
-
-	//try {
 		if(proc.text.contains("uccess")) {
 			log "APK installation successful on $serial $apkPath"
 			inform("APK installation successful!")
+		} else {
+			log "APK installation failed on $serial $apkPath"
+			alert("APK installation failed!\n\n${apkPath}\n\n${e.toString()}")
 		}
-		else { // instead of try-catch
-	//} catch(Exception e) {
-		log "APK installation failed on $serial $apkPath"
-		alert("APK installation failed!\n\n${apkPath}\n\n${e.toString()}")
-	}
 }
 
-Process adbStartRecording(String seria) {
+Process adbStartRecording(String serial) {
+	//log "Clear logcat on $serial"
+	//"adb -s ${serial} wait-for-device logcat -c"
 	log "Start recording on $serial"
 	"adb -s ${serial} wait-for-device shell screenrecord --bugreport --size \"1280x720\" /sdcard/asrec.mp4".execute()
 }
 
 void adbStopRecording(String serial) {
 	log "Stop recording on $serial"
-	def videoPath = fileDialog()
-	log "Pulling video on $serial to $videoPath"
-	"adb -s ${serial} wait-for-device pull /sdcard/asrec.mp4 ${videoPath}.mp4".execute()
-	log "Pulling video sucessfully on $serial to $videoPath"
+	//log "Fetching logcat of $serial"
+	//def logcat_content = "adb -s ${serial} wait-for-device logcat -d".execute().text
+
+	def filePath = fileDialog()
+	//def logcat = new File("${filePath}_logcat.txt")
+	//logcat << logcat_content
+	//log "Logcat of $serial fetched to ${filePath}_logcat.txt"
+
+	log "Pulling video on $serial to $filePath"
+	"adb -s ${serial} wait-for-device pull /sdcard/asrec.mp4 ${filePath}.mp4".execute()
+	log "Pulling video sucessfully on $serial to $filePath"
 }
 
 void adbToggleChargingMode(String serial) {
@@ -547,7 +579,7 @@ String fileDialog(String title) {
 	if (dialog.showOpenDialog() == 0) {
 		return dialog.selectedFile
 	}
-	false
+	null
 }
 
 // pop ups
