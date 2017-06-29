@@ -1,8 +1,7 @@
 #!/usr/bin/groovy
-/*
-	license GPL 3.0
-	copyright 2017 boddenberg.it
-*/
+
+// license GPL 3.0
+// copyright Boddenberg.it 2017
 
 import groovy.swing.SwingBuilder
 import javax.swing.JOptionPane
