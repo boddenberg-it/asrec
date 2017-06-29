@@ -50,7 +50,7 @@ List devices = []
 Process recordProcess
 
 String version = "0.1"
-log "Initialising asrec..."
+log "Initialising ADB..."
 
 swing = new SwingBuilder()
 frame = swing.frame(title:'Android Screen RECorder') {
@@ -222,7 +222,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 						return
 					}
 					if(adbDaemonLabel.text.equals("ADB daemon: Initialising...")) {
-						log "adb daemon initialised"
+						log "ADB daemon initialised"
 						adbDaemonLabel.text = "ADB daemon: Initialised"
 						initButton.text = "Refresh"
 					}
@@ -231,9 +231,6 @@ frame = swing.frame(title:'Android Screen RECorder') {
 					if (devices.size() == 1) { oneDeviceFound() }
 					if (devices.size() > 1) { moreThanOneFound() }
 					log "Using device: $serial"
-					// separating each "Refresh" lick with a newline
-					// to easily spot "Using device: xyz"
-					println ""
 				})
 			}
 
@@ -452,7 +449,13 @@ void adbDisconnectTcp(String serial) {
 void adbTakeScreenshot(String serial) {
 	log "Taking screenshot of $serial"
 	"adb -s ${serial} wait-for-device shell screencap /mnt/sdcard/asrec.png".execute()
+
 	def filePath = fileDialog()
+	if(!filePath) {
+		log "Cancelled fileDialog for Take Screenshot on $serial"
+		return
+	}
+
 	log "Pulling screenshot of $serial to $filePath"
 	"adb -s ${serial} wait-for-device pull /mnt/sdcard/asrec.png ${filePath}.png".execute().text
 	log "Pulling of screenshot on $serial done"
@@ -464,7 +467,10 @@ void adbResetBatteryAndChargingMode(String serial){
 }
 
 void adbInstallApk(String serial) {
+	log "Open Installing APK fileDialog on $serial"
 	apkPath = fileDialog()
+	if(!apkPath) return
+
 	log "Installing APK on $serial $apkPath"
 	// checking whether not null and ends with apk
 	if(apkPath && !apkPath.endsWith("apk")) {
@@ -481,26 +487,31 @@ void adbInstallApk(String serial) {
 			inform("APK installation successful!")
 		} else {
 			log "APK installation failed on $serial $apkPath"
-			alert("APK installation failed!\n\n${apkPath}\n\n${e.toString()}")
+			alert("APK installation failed!\n\n${apkPath}\n\n${apkPath}")
 		}
 }
 
 Process adbStartRecording(String serial) {
-	//log "Clear logcat on $serial"
-	//"adb -s ${serial} wait-for-device logcat -c"
+	log "Clear logcat on $serial"
+	"adb -s ${serial} wait-for-device logcat -c"
 	log "Start recording on $serial"
 	"adb -s ${serial} wait-for-device shell screenrecord --bugreport --size \"1280x720\" /sdcard/asrec.mp4".execute()
 }
 
 void adbStopRecording(String serial) {
 	log "Stop recording on $serial"
-	//log "Fetching logcat of $serial"
-	//def logcat_content = "adb -s ${serial} wait-for-device logcat -d".execute().text
+	def logcat_content = "adb -s ${serial} wait-for-device logcat -d".execute().text
+	log "Logcat fetched of $serial"
 
 	def filePath = fileDialog()
-	//def logcat = new File("${filePath}_logcat.txt")
-	//logcat << logcat_content
-	//log "Logcat of $serial fetched to ${filePath}_logcat.txt"
+	if(!filePath) {
+		log "Cancelled fileDialog for Recording on $serial"
+		return
+	}
+
+	def logcat = new File("${filePath}_logcat.txt")
+	logcat << logcat_content
+	log "Logcat of $serial fetched to ${filePath}_logcat.txt"
 
 	log "Pulling video on $serial to $filePath"
 	"adb -s ${serial} wait-for-device pull /sdcard/asrec.mp4 ${filePath}.mp4".execute()
@@ -566,7 +577,7 @@ void adbBrightnessUp(String serial) {
 }
 
 // fileDialog used for Install APK, Take Screenshot and Record Video
-String fileDialog(String title) {
+def fileDialog(String title) {
 	def dialog = swing.fileChooser(dialogTitle: "${title}")
 	// approve returns 0, cancel returns 1
 	if (dialog.showOpenDialog() == 0) {
