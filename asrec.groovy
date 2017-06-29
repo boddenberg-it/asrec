@@ -13,7 +13,6 @@ import javax.swing.event.ChangeListener;
 // labels
 def adbDaemonLabel
 def batteryLabel
-def brightnessLabel
 def choosenDeviceLabel
 def testingFeaturesLabel
 // buttons
@@ -26,7 +25,6 @@ def initButton
 def installApkButton
 def resetBatteryAndChargingModeButton
 def setBatteryButton
-def setBrightnessButton
 def takeScreenshotButton
 def toggleAirplaneModeButton
 def toggleChargingButton
@@ -49,7 +47,7 @@ String serial = ""
 List devices = []
 Process recordProcess
 
-String version = "0.1"
+String version = "0.2"
 log "Initialising ADB..."
 
 swing = new SwingBuilder()
@@ -57,7 +55,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 	// functions within UI (mostly to set UI according to current state)
 	// helper closures
-		def enableUi = {
+	def enableUi = {
 		toggleChargingButton.setEnabled(uiState)
 		installApkButton.setEnabled(uiState)
 		takeScreenshotButton.setEnabled(uiState)
@@ -166,8 +164,8 @@ frame = swing.frame(title:'Android Screen RECorder') {
 			})
 			chooseDeviceMenu.add(item)
 		}
-	chooseDeviceMenu.setEnabled(true)
-}
+		chooseDeviceMenu.setEnabled(true)
+	}
 
 	// actual UI compoments
 	menuBar {
@@ -179,14 +177,15 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 			menuItem('Info', actionPerformed: { event ->
 				inform("""Android Screen RECorder
+					https://github.com/boddenberg-it/asrec
 
-					version: $version
 					author: André Boddenberg
+					version: $version
 
 					license: GPL 3.0
 					https://www.gnu.org/licenses/gpl-3.0.en.html
 
-					copyright 2017 boddenberg.it""")
+					Copyright Boddenberg.it 2017""")
 			})
 
 		}
@@ -274,14 +273,12 @@ frame = swing.frame(title:'Android Screen RECorder') {
 					}
 					if(!recordState) {
 						recordState = true
-
 						recordProcess = adbStartRecording(serial)
 						recordVideoButton.text = "Stop Recording"
 					} else {
 						recordProcess.destroy()
 						recordVideoButton.text = "Pulling *.mp4..."
 						recordVideoButton.setEnabled(false)
-
 						adbStopRecording(serial)
 						recordVideoButton.text = "Record Video"
 						recordVideoButton.setEnabled(true)
@@ -300,7 +297,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 				brightnessDownButton = button('Brightness Down', actionPerformed: { event ->
 					adbBrightnessDown(serial)
 				})
-				label ' ' // spacer
+				label ' '
 				brightnessUpButton = button('Brightness Up', actionPerformed: { event ->
 					adbBrightnessUp(serial)
 				})
@@ -358,6 +355,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 				})
 			}
 
+			// ADB over WiFi
 			hbox {
 				connectTcpButton = button('Connect ADB WiFi', actionPerformed: { event ->
 					serial = adbConnectTcp(serial)
@@ -415,7 +413,7 @@ nm_height = s.height * 0.6
 frame.resize(nm_width, nm_height)
 frame.visible = true
 
-// adb functions
+// ADB functions
 String adbConnectTcp(String serial) {
 	log "ADB-WiFi connecting attempt on $serial"
 	try {
