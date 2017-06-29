@@ -479,7 +479,7 @@ void adbInstallApk(String serial) {
 
 	def proc =  "adb -s ${serial} install -r -d ${apkPath}".execute()
 	// TODO: think about preferences menu to set "install timeout in seconds"
-	proc.waitForOrKill(30000)
+	proc.waitForOrKill(60000)
 		if(proc.text.contains("uccess")) {
 			log "APK installation successful on $serial $apkPath"
 			inform("APK installation successful!")
