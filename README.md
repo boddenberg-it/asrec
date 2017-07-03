@@ -2,10 +2,12 @@
 
 ### Why?
 
-Asrec is designed for QA engineers to easily document bugs more descriptive by attaching screenshots and videos.
+Asrec is designed for QA engineers to document bugs more descriptive by easily attaching screenshots, videos and logs.
 
 ### How does the UI look like?
-![screenshot of asrec UI](https://blobb.me/boddenberg-it/asrec_screenshot.png)
+
+Asrec will start in "normal mode" (left), which provides the three base functionalities. The "advanced mode" provides further functionalities, such as setting the battery level, de/increasing brightness, toggle charging and airplane mode,...
+![screenshot of asrec UI](https://blobb.me/boddenberg-it/asrec_screenshot_v02.png)
 
 ### Nice, what do I need to get started?
 
