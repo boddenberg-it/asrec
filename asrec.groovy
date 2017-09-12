@@ -470,7 +470,7 @@ void adbInstallApk(String serial) {
 
 	log "Installing APK $apkPath"
 	// checking whether not null and ends with apk
-	if(apkPath && !apkPath.endsWith("apk")) {
+	if(apkPath && !apkPath.toString().endsWith("apk")) {
 		log "ERROR: wrong file extension (!*.apk)"
 		alert("File does not hold \"*.apk\" file extension")
 		return
