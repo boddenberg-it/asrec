@@ -184,14 +184,14 @@ frame = swing.frame(title:'Android Screen RECorder') {
 					license: GPL 3.0
 					https://www.gnu.org/licenses/gpl-3.0.en.html
 
-					Copyright Boddenberg.it 2017""")
+					Boddenberg.it 2019""")
 			})
 
 		}
 		menu('Mode') {
 			menuItem('Normal', actionPerformed: { event ->
 				frame.resize(nm_width, nm_height)
-				testingFeaturesLabel.text = "Copyright Boddenberg.it 2017"
+				testingFeaturesLabel.text = "Boddenberg.it 2019"
 			})
 			menuItem('Advanced', actionPerformed: { event ->
 				frame.resize(am_width, am_height)
@@ -310,17 +310,17 @@ frame = swing.frame(title:'Android Screen RECorder') {
 
 				batterySlider = slider()
 				batterySlider.addChangeListener(new ChangeListener() {
-      		public void stateChanged(ChangeEvent event) {
-        		batteryValue = batterySlider.getValue()
+			public void stateChanged(ChangeEvent event) {
+			batteryValue = batterySlider.getValue()
 						batteryLabel.text = "Battery: ${batteryValue} %"
 						setBatteryButton.setEnabled(true)
 					}
 				})
 
 				setBatteryButton = button('set', actionPerformed: { event ->
-			 		log "Setting battery level to ${batteryValue}"
-			 		adbSetBatteryLevel(serial, batterySlider.getValue())
-			 		setBatteryButton.setEnabled(false)
+					log "Setting battery level to ${batteryValue}"
+					adbSetBatteryLevel(serial, batterySlider.getValue())
+					setBatteryButton.setEnabled(false)
 					resetBatteryAndChargingModeButton.setEnabled(true)
 				})
 				setBatteryButton.setEnabled(false)
@@ -375,7 +375,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 						initButton.doClick()
 						enableUi()
 					}
-		 		})
+				})
 				disconnectTcpButton.setEnabled(false)
 			}
 
@@ -393,7 +393,7 @@ frame = swing.frame(title:'Android Screen RECorder') {
 			}
 			label ' '
 			hbox { label'Copyright Boddenberg.it 2017' }
-  	}
+		}
 		enableUi()
 	}
 	initButton.doClick()
